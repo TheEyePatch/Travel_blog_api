@@ -1,5 +1,7 @@
 class BlogsController < ApplicationController
   before_action :authenticate_user, only: [:create, :update]
+  before_action :check_author, only: :update
+  
   def index
     @blogs = Blog.all
     render json: @blogs
@@ -32,7 +34,6 @@ class BlogsController < ApplicationController
   end
 
   def update
-    @blog = @current_user.blogs.find(params[:id])
     if @blog.valid? && @blog.save
       render json: {
         message: 'Updated Blog Successfully',
@@ -51,6 +52,18 @@ class BlogsController < ApplicationController
   end
 
   private
+
+  def check_author
+    @blog = Blog.find(params[:id])
+    if @blog.user == @current_user
+      return @blog
+    else
+      render json: {
+        message: 'User is not the author',
+        data: {},
+      }, status: :unauthorized
+    end
+  end
 
   def authenticate_user
     @current_user = User.find_by(authentication_token: request.headers['Authorization'])
